@@ -141,7 +141,9 @@ class HoverAPI(object):
                 if entry['id'] in self._config.DNS_IDS:
                     logging.info('    {0} = {1}'.format(entry['id'], entry['content']))
                     self._current_dns_ips[entry['id']] = entry['content']
-
+    
+    @backoff.on_exception(backoff.expo,
+                          requests.exceptions.RequestException)
     def update(self):
         current_external_ip = requests.get('https://api.ipify.org').text
         logging.info('Updating - Current external IP = {0}'.format(current_external_ip))
