@@ -19,9 +19,10 @@ import requests
 import sys
 import time
 import os
-
 import pprint
 pp = pprint.PrettyPrinter(width=120)
+
+import backoff
 
 default_config = {
     # Your hover.com username and password
@@ -113,6 +114,8 @@ class HoverAPI(object):
         self.get_auth()
         self.get_current_ips()
 
+    @backoff.on_exception(backoff.expo,
+                          requests.exceptions.RequestException)
     def get_auth(self):
         logging.info('Logging in')
         data = {"password": self._config.PASSWORD, "username": self._config.USERNAME, }
@@ -149,7 +152,9 @@ class HoverAPI(object):
                 self.call('put', 'dns/' + dns_id, {'content': current_external_ip})
                 # Update cache
                 self._current_dns_ips[dns_id] = current_external_ip
-
+    
+    @backoff.on_exception(backoff.expo,
+                          requests.exceptions.RequestException)
     def call(self, method, resource, data=None):
         logging.debug('method={0}, resource={1}, data={2}'.format(method, resource, str(data)))
         self.check_auth()
